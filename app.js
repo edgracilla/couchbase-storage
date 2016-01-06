@@ -61,8 +61,7 @@ platform.on('data', function (data) {
  * Emitted when the platform shuts down the plugin. The Storage should perform cleanup of the resources on this event.
  */
 platform.once('close', function () {
-	var domain = require('domain');
-	var d = domain.create();
+	let d = require('domain').create();
 
 	d.once('error', function(error) {
 		console.error(error);
