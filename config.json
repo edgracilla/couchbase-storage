@@ -8,7 +8,7 @@
 	"label": "Host",
 	"type": "String",
 	"required": true,
-	"help": "Host(s) for the Couchbase database. Values can be multiple separated by comma."
+	"help": "Host(s) for the Couchbase database."
   },
   "port": {
 	"label": "Port",
