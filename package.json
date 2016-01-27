@@ -1,7 +1,7 @@
 {
   "name": "couchbase-storage",
   "description": "Couchbase storage plugin for Reekoh IoT Platform",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Reekoh, Inc.",
   "main": "app.js",
   "scripts": {
@@ -26,5 +26,5 @@
     "mocha": "^2.3.4",
     "should": "^8.0.2"
   },
-  "license": "LGPLv3"
+  "license": "LGPL-3.0"
 }
