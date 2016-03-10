@@ -35,14 +35,17 @@ var record = {
 describe('Storage', function () {
 	this.slow(5000);
 
-	after('terminate child process', function () {
+	after('terminate child process', function (done) {
+		this.timeout(7000);
+
 		storage.send({
 			type: 'close'
 		});
 
 		setTimeout(function () {
 			storage.kill('SIGKILL');
-		}, 3000);
+			done();
+		}, 5000);
 	});
 
 	describe('#spawn', function () {
