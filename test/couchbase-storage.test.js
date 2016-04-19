@@ -4,33 +4,30 @@
  */
 'use strict';
 
-var cp       = require('child_process'),
-	assert   = require('assert'),
-	should   = require('should'),
-	moment   = require('moment'),
-	uuid     = require('node-uuid'),
+var cp     = require('child_process'),
+	assert = require('assert'),
+	should = require('should'),
+	moment = require('moment'),
+	uuid   = require('node-uuid'),
 	storage;
 
-var HOST 	    = '52.90.215.131',
-	USER 	    = 'couchbase',
-	PASSWORD    = '',
-	PORT 	    = 8091,
-	TRANSACTION = 'insert',
-	BUCKET      = 'default',
-	GENEREATE   = true,
-	FIELD_KEY   = 'id',
-	ID  	    = uuid.v4();
+var HOST            = '52.90.215.131',
+	PORT            = 8091,
+	TRANSACTION     = 'insert',
+	BUCKET          = 'default',
+	KEY_FIELD       = 'id',
+	ID              = uuid.v4();
 
 var record = {
-		id: ID,
-		co2: '11%',
-		temp: 23,
-		quality: 11.25,
-		reading_time: '2015-11-27T11:04:13.539Z',
-		metadata: {metadata_json: 'reekoh metadata json'},
-		random_data: 'abcdefg',
-		is_normal: true
-	};
+	id: ID,
+	co2: '11%',
+	temp: 23,
+	quality: 11.25,
+	reading_time: '2015-11-27T11:04:13.539Z',
+	metadata: {metadata_json: 'reekoh metadata json'},
+	random_data: 'abcdefg',
+	is_normal: true
+};
 
 describe('Storage', function () {
 	this.slow(5000);
@@ -67,14 +64,11 @@ describe('Storage', function () {
 				type: 'ready',
 				data: {
 					options: {
-						host	    : HOST,
-						port        : PORT,
-						user	    : USER,
-						password    : PASSWORD,
-						bucket      : BUCKET,
-						transaction : TRANSACTION,
-						generate    : GENEREATE,
-						field_key   : FIELD_KEY
+						host: HOST,
+						port: PORT,
+						bucket: BUCKET,
+						transaction: TRANSACTION,
+						key_field: KEY_FIELD
 					}
 				}
 			}, function (error) {
@@ -97,17 +91,16 @@ describe('Storage', function () {
 			this.timeout(20000);
 
 			var couchbase = require('couchbase');
-			var cluster = new couchbase.Cluster(USER + ':' + PASSWORD + '//' + HOST + ':' + PORT);
+			var cluster = new couchbase.Cluster('couchbase://' + HOST + ':' + PORT);
 			var bucket = cluster.openBucket(BUCKET);
 
-			bucket.get(ID, function(err, result) {
-
+			bucket.get(ID, function (err, result) {
 				should.equal(record.co2, result.value.co2, 'Data validation failed. Field: co2');
 				should.equal(record.temp, result.value.temp, 'Data validation failed. Field: temp');
 				should.equal(record.quality, result.value.quality, 'Data validation failed. Field: quality');
 				should.equal(record.random_data, result.value.random_data, 'Data validation failed. Field: random_data');
 				should.equal(moment(record.reading_time).format('YYYY-MM-DDTHH:mm:ss.SSSSZ'),
-					moment(result.value.reading_time).format('YYYY-MM-DDTHH:mm:ss.SSSSZ'),  'Data validation failed. Field: reading_time');
+					moment(result.value.reading_time).format('YYYY-MM-DDTHH:mm:ss.SSSSZ'), 'Data validation failed. Field: reading_time');
 				should.equal(JSON.stringify(record.metadata), JSON.stringify(result.value.metadata), 'Data validation failed. Field: metadata');
 				should.equal(record.is_normal, result.value.is_normal, 'Data validation failed. Field: is_normal');
 				done();
