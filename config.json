@@ -1,38 +1,27 @@
-/* The config.json file is where you specify additional configuration needed by
- * your plugin. The details you specify here will be translated to a form on the
- * UI. The values supplied by the users will then get injected as options on the
- * platform on ready event.
- */
 {
   "host": {
 	"label": "Host",
 	"type": "String",
 	"required": true,
-	"help": "Host(s) for the Couchbase database."
+	"help": "Host for the Couchbase database connection."
   },
   "port": {
 	"label": "Port",
 	"type": "Number",
-	"required": false,
-	"help": "(Optional) Port for the Cassandra database."
-  },
-  "user" : {
-	"label": "User",
-	"type": "String",
 	"required": true,
-	"help": "User for authentication."
-  },
-  "password" : {
-	"label": "Password",
-	"type": "Password",
-	"required": false,
-	"help": "(Optional) Password for authentication."
+	"help": "Port for the Couchbase database connection."
   },
   "bucket" : {
 	"label": "Bucket",
 	"type": "String",
 	"required": true,
 	"help": "Bucket where the data will be saved."
+  },
+  "bucket_password" : {
+	"label": "Bucket Password",
+	"type": "Password",
+	"required": false,
+	"help": "(Optional) Bucket Password for authentication."
   },
   "transaction": {
 	"label": "Transaction type",
@@ -41,16 +30,10 @@
 	"enum" : ["insert", "upsert"],
 	"help": "Type of transaction process when inserting data."
   },
-  "generate": {
-	"label": "Auto generate key",
-	"type": "Boolean",
-	"required": true,
-	"help": "Auto generate key using node-uuid v4. This is true if Field Key is blank regardless if it is set to false to prevent error when inserting data."
-  },
-  "field_key": {
-	"label": "Field Key",
-	"type": "Boolean",
+  "key_field": {
+	"label": "Key Field",
+	"type": "String",
 	"required": false,
-	"help": "(Optional) Use this field to assign the key must be a string. If this is blank it will auto generate a key. If Auto generate key is set to true it will generate an id if the field specified is not existing. If Auto generate key is set to false and if the field specified is not existing it will throw an error and cause the plugin to close."
+	"help": "(Optional) Use this field to assign the key. If this is blank or if the field is not found within the data, the key will be generated automatically."
   }
 }

@@ -1,66 +1,68 @@
 'use strict';
 
-var platform = require('./platform'),
+var uuid          = require('node-uuid'),
+	async         = require('async'),
+	isArray       = require('lodash.isarray'),
+	platform      = require('./platform'),
 	isPlainObject = require('lodash.isplainobject'),
-	isArray = require('lodash.isarray'),
-	async = require('async'),
 	bucket, opt;
 
-let sendData = (data) => {
-	var uuid = require('node-uuid');
-	var id;
+let sendData = function (data, callback) {
+	let id;
 
-	if (opt.field_key) {
-		id = data[opt.field_key];
-		if ((id === undefined || id === null) && opt.generate === true ) id =  uuid.v4();
-	} else {
-		id = uuid.v4();
-	}
+	if (opt.field_key) id = data[opt.field_key];
 
 	if (opt.transaction === 'insert') {
-		bucket.insert(id , data, function(err) {
-			if (err) {
-				if (err.code === 12) {
-					platform.log(JSON.stringify({
-						title: 'Duplicate key being inserted to Couchbase',
-						data: data,
-						key: id
-					}));
-				} else {
-					console.error('Error inserting record on Couchbase', err);
-					platform.handleException(err);
+		bucket.insert(id || uuid.v4(), data, function (insertError) {
+			if (insertError) {
+				if (insertError.code === 12)
+					callback(new Error(`Duplicate key being inserted to Couchbase. Key: ${id}`));
+				else {
+					console.error('Error inserting record on Couchbase', insertError);
+					callback(insertError);
 				}
-			} else {
+			}
+			else {
 				platform.log(JSON.stringify({
 					title: 'Record Successfully inserted to Couchbase.',
 					data: data,
 					key: id
 				}));
+
+				callback();
 			}
 		});
-	} else {
-		bucket.upsert(id , data, function(err) {
-			if (err) {
-				console.error('Error inserting record on Couchbase', err);
-				platform.handleException(err);
-			} else {
+	}
+	else {
+		bucket.upsert(id || uuid.v4(), data, function (upsertError) {
+			if (upsertError) {
+				console.error('Error inserting record on Couchbase', upsertError);
+				callback(upsertError);
+			}
+			else {
 				platform.log(JSON.stringify({
 					title: 'Record Successfully inserted to Couchbase.',
 					data: data,
 					key: id
 				}));
+
+				callback();
 			}
 		});
 	}
 };
 
 platform.on('data', function (data) {
-	if(isPlainObject(data)){
-		sendData(data);
+	if (isPlainObject(data)) {
+		sendData(data, (error) => {
+			if (error) platform.handleException(error);
+		});
 	}
-	else if(isArray(data)){
-		async.each(data, function(datum){
-			sendData(datum);
+	else if (isArray(data)) {
+		async.each(data, (datum, done) => {
+			sendData(datum, done);
+		}, (error) => {
+			if (error) platform.handleException(error);
 		});
 	}
 	else
@@ -71,19 +73,7 @@ platform.on('data', function (data) {
  * Emitted when the platform shuts down the plugin. The Storage should perform cleanup of the resources on this event.
  */
 platform.once('close', function () {
-	let d = require('domain').create();
-
-	d.once('error', function(error) {
-		console.error(error);
-		platform.handleException(error);
-		platform.notifyClose();
-		d.exit();
-	});
-
-	d.run(function() {
-		platform.notifyClose(); // Notify the platform that resources have been released.
-		d.exit();
-	});
+	platform.notifyClose();
 });
 
 /**
@@ -92,17 +82,10 @@ platform.once('close', function () {
  * @param {object} options The options or configuration injected by the platform to the plugin.
  */
 platform.once('ready', function (options) {
-
-
-	var auth = options.user + ':';
-	var url = options.host;
-
-	if (options.password) auth = auth + options.password;
-	if (options.port) url = url + ':' + options.port;
-
 	var couchbase = require('couchbase');
-	var cluster = new couchbase.Cluster(auth + '//' + url);
-	bucket = cluster.openBucket(options.bucket);
+	var cluster = new couchbase.Cluster(`couchbase://${options.host}:${options.port}`);
+
+	bucket = cluster.openBucket(options.bucket, options.password);
 
 	opt = options;
 
