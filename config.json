@@ -8,8 +8,8 @@
   "port": {
 	"label": "Port",
 	"type": "Number",
-	"required": true,
-	"help": "Port for the Couchbase database connection."
+	"required": false,
+	"help": "(Optional) Port for the Couchbase database connection."
   },
   "bucket" : {
 	"label": "Bucket",

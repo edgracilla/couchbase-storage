@@ -82,8 +82,12 @@ platform.once('close', function () {
  * @param {object} options The options or configuration injected by the platform to the plugin.
  */
 platform.once('ready', function (options) {
-	var couchbase = require('couchbase');
-	var cluster = new couchbase.Cluster(`couchbase://${options.host}:${options.port}`);
+	let url       = `${options.host}`,
+		couchbase = require('couchbase');
+
+	if (options.port) url = `${url}:${options.port}`;
+
+	var cluster = new couchbase.Cluster(`couchbase://${url}`);
 
 	bucket = cluster.openBucket(options.bucket, options.bucket_password);
 
