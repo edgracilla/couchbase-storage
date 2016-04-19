@@ -85,7 +85,7 @@ platform.once('ready', function (options) {
 	var couchbase = require('couchbase');
 	var cluster = new couchbase.Cluster(`couchbase://${options.host}:${options.port}`);
 
-	bucket = cluster.openBucket(options.bucket, options.password);
+	bucket = cluster.openBucket(options.bucket, options.bucket_password);
 
 	opt = options;
 
