@@ -10,7 +10,7 @@ var uuid          = require('node-uuid'),
 let sendData = function (data, callback) {
 	let id;
 
-	if (opt.field_key) id = data[opt.field_key];
+	if (opt.key_field) id = data[opt.key_field];
 
 	if (opt.transaction === 'insert') {
 		bucket.insert(id || uuid.v4(), data, function (insertError) {
