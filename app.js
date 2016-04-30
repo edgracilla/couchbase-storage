@@ -10,7 +10,10 @@ var uuid          = require('node-uuid'),
 let sendData = function (data, callback) {
 	let id;
 
-	if (opt.key_field) id = data[opt.key_field];
+	if (opt.key_field) {
+		id = data[opt.key_field];
+		delete data[opt.key_field];
+	}
 
 	if (opt.transaction === 'insert') {
 		bucket.insert(id || uuid.v4(), data, function (insertError) {
@@ -85,14 +88,23 @@ platform.once('ready', function (options) {
 	let url       = `${options.host}`,
 		couchbase = require('couchbase');
 
-	if (options.port) url = `${url}:${options.port}`;
-
-	var cluster = new couchbase.Cluster(`couchbase://${url}`);
-
-	bucket = cluster.openBucket(options.bucket, options.bucket_password);
-
 	opt = options;
 
-	platform.notifyReady();
-	platform.log('Couchbase Storage Plugin has been initialized.');
+	if (options.port) url = `${url}:${options.port}`;
+
+	console.log(`couchbase://${url}`);
+	var cluster = new couchbase.Cluster(`couchbase://${url}`);
+
+	bucket = cluster.openBucket(options.bucket, options.bucket_password || '', (error) => {
+		if (error) {
+			platform.handleException(error);
+
+			return setTimeout(() => {
+				process.exit(1);
+			}, 5000);
+		}
+
+		platform.notifyReady();
+		platform.log('Couchbase Storage Plugin has been initialized.');
+	});
 });
