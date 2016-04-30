@@ -11,12 +11,12 @@ var cp     = require('child_process'),
 	uuid   = require('node-uuid'),
 	storage;
 
-var HOST            = '52.90.215.131',
-	PORT            = 8091,
-	TRANSACTION     = 'insert',
-	BUCKET          = 'default',
-	KEY_FIELD       = 'id',
-	ID              = uuid.v4();
+var HOST        = '52.90.215.131',
+	PORT        = 8092,
+	TRANSACTION = 'insert',
+	BUCKET      = 'default',
+	KEY_FIELD   = 'id',
+	ID          = uuid.v4();
 
 var record = {
 	id: ID,
