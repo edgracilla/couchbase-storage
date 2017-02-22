@@ -11,7 +11,7 @@ const ID = uuid.v4()
 const INPUT_PIPE = 'demo.pipe.storage'
 const BROKER = 'amqp://guest:guest@127.0.0.1/'
 
-let _storage = null
+let _app = null
 let _channel = null
 let _conn = null
 
@@ -56,19 +56,19 @@ describe('Couchbase Storage', function () {
   after('terminate child process', function (done) {
     this.timeout(7000)
     _conn.close()
-    _storage.send({
+    _app.send({
       type: 'close'
     })
 
     setTimeout(function () {
-      _storage.kill('SIGKILL')
+      _app.kill('SIGKILL')
       done()
     }, 5000)
   })
 
   describe('#spawn', function () {
     it('should spawn a child process', function () {
-      should.ok(_storage = cp.fork(process.cwd()), 'Child process not spawned.')
+      should.ok(_app = cp.fork(process.cwd()), 'Child process not spawned.')
     })
   })
 
@@ -76,7 +76,7 @@ describe('Couchbase Storage', function () {
     it('should notify the parent process when ready within 20 seconds', function (done) {
       this.timeout(10000)
 
-      _storage.on('message', (message) => {
+      _app.on('message', (message) => {
         if (message.type === 'ready') {
           done()
         }
@@ -89,7 +89,7 @@ describe('Couchbase Storage', function () {
       this.timeout(8000)
       _channel.sendToQueue(INPUT_PIPE, new Buffer(JSON.stringify(record)))
 
-      _storage.on('message', (msg) => {
+      _app.on('message', (msg) => {
         if (msg.type === 'processed') { done() }
       })
     })
