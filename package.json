@@ -6,6 +6,7 @@
   "license": "GPL-3.0",
   "main": "app.js",
   "scripts": {
+    "test": "gulp lint"
   },
   "repository": {
     "type": "git",
