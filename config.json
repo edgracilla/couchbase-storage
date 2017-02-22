@@ -17,7 +17,7 @@
 	"required": true,
 	"help": "Bucket where the data will be saved."
   },
-  "bucket_password" : {
+  "bucketPassword" : {
 	"label": "Bucket Password",
 	"type": "Password",
 	"required": false,
@@ -30,7 +30,7 @@
 	"enum" : ["insert", "upsert"],
 	"help": "Type of transaction process when inserting data."
   },
-  "key_field": {
+  "keyField": {
 	"label": "Key Field",
 	"type": "String",
 	"required": false,

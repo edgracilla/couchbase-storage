@@ -1,110 +1,97 @@
-'use strict';
+'use strict'
 
-var uuid          = require('node-uuid'),
-	async         = require('async'),
-	isArray       = require('lodash.isarray'),
-	platform      = require('./platform'),
-	isPlainObject = require('lodash.isplainobject'),
-	bucket, opt;
+const reekoh = require('reekoh')
+const _plugin = new reekoh.plugins.Storage()
 
-let sendData = function (data, callback) {
-	let id;
+const async = require('async')
+const uuid = require('node-uuid')
+const couchbase = require('couchbase')
+const isPlainObject = require('lodash.isplainobject')
 
-	if (opt.key_field) {
-		id = data[opt.key_field];
-		delete data[opt.key_field];
-	}
+let _opt = null
+let _bucket = null
 
-	if (opt.transaction === 'insert') {
-		bucket.insert(id || uuid.v4(), data, function (insertError) {
-			if (insertError) {
-				if (insertError.code === 12)
-					callback(new Error(`Duplicate key being inserted to Couchbase. Key: ${id}`));
-				else {
-					console.error('Error inserting record on Couchbase', insertError);
-					callback(insertError);
-				}
-			}
-			else {
-				platform.log(JSON.stringify({
-					title: 'Record Successfully inserted to Couchbase.',
-					data: data,
-					key: id
-				}));
+let sendData = (data, callback) => {
+  let id
 
-				callback();
-			}
-		});
-	}
-	else {
-		bucket.upsert(id || uuid.v4(), data, function (upsertError) {
-			if (upsertError) {
-				console.error('Error inserting record on Couchbase', upsertError);
-				callback(upsertError);
-			}
-			else {
-				platform.log(JSON.stringify({
-					title: 'Record Successfully inserted to Couchbase.',
-					data: data,
-					key: id
-				}));
+  if (_opt.keyField) {
+    id = data[_opt.keyField]
+    delete data[_opt.keyField]
+  }
 
-				callback();
-			}
-		});
-	}
-};
+  if (_opt.transaction === 'insert') {
+    _bucket.insert(id || uuid.v4(), data, (err) => {
+      if (err) {
+        if (err.code === 12) {
+          callback(new Error(`Duplicate key being inserted to Couchbase. Key: ${id}`))
+        } else {
+          console.error('Error inserting record on Couchbase', err)
+          callback(err)
+        }
+      } else {
+        _plugin.log(JSON.stringify({
+          title: 'Record Successfully inserted to Couchbase.',
+          data: data,
+          key: id
+        }))
 
-platform.on('data', function (data) {
-	if (isPlainObject(data)) {
-		sendData(data, (error) => {
-			if (error) platform.handleException(error);
-		});
-	}
-	else if (isArray(data)) {
-		async.each(data, (datum, done) => {
-			sendData(datum, done);
-		}, (error) => {
-			if (error) platform.handleException(error);
-		});
-	}
-	else
-		platform.handleException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`));
-});
+        callback()
+      }
+    })
+  } else {
+    _bucket.upsert(id || uuid.v4(), data, (err) => {
+      if (err) {
+        console.error('Error inserting record on Couchbase', err)
+        callback(err)
+      } else {
+        _plugin.log(JSON.stringify({
+          title: 'Record Successfully inserted to Couchbase.',
+          data: data,
+          key: id
+        }))
 
-/**
- * Emitted when the platform shuts down the plugin. The Storage should perform cleanup of the resources on this event.
- */
-platform.once('close', function () {
-	platform.notifyClose();
-});
+        callback()
+      }
+    })
+  }
+}
 
-/**
- * Emitted when the platform bootstraps the plugin. The plugin should listen once and execute its init process.
- * Afterwards, platform.notifyReady() should be called to notify the platform that the init process is done.
- * @param {object} options The options or configuration injected by the platform to the plugin.
- */
-platform.once('ready', function (options) {
-	let url       = `${options.host}`,
-		couchbase = require('couchbase');
+_plugin.on('data', (data) => {
+  if (isPlainObject(data)) {
+    sendData(data, (error) => {
+      if (error) _plugin.logException(error)
+      process.send({ type: 'processed' })
+    })
+  } else if (Array.isArray(data)) {
+    async.each(data, (datum, done) => {
+      sendData(datum, done)
+    }, (error) => {
+      if (error) _plugin.logException(error)
+      process.send({ type: 'processed' })
+    })
+  } else {
+    _plugin.logException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`))
+  }
+})
 
-	opt = options;
+_plugin.once('ready', () => {
+  _opt = _plugin.config
 
-	if (options.port) url = `${url}:${options.port}`;
+  let url = `${_opt.host}`
+  if (_opt.port) url = `${url}:${_opt.port}`
 
-	console.log(`couchbase://${url}`);
-	var cluster = new couchbase.Cluster(`couchbase://${url}`);
+  let cluster = new couchbase.Cluster(`couchbase://${url}`)
 
-	bucket = cluster.openBucket(options.bucket, options.bucket_password || '', (error) => {
-		if (error) {
-			platform.handleException(error);
+  _bucket = cluster.openBucket(_opt.bucket, _opt.bucketPassword || '', (error) => {
+    if (error) {
+      _plugin.logException(error)
 
-			return setTimeout(() => {
-				process.exit(1);
-			}, 5000);
-		}
+      return setTimeout(() => {
+        process.exit(1)
+      }, 5000)
+    }
 
-		platform.notifyReady();
-		platform.log('Couchbase Storage Plugin has been initialized.');
-	});
-});
+    _plugin.log('Couchbase Storage Plugin has been initialized.')
+    process.send({ type: 'ready' })
+  })
+})
