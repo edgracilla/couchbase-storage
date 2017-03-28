@@ -1,7 +1,7 @@
 'use strict'
 
 const reekoh = require('reekoh')
-const _plugin = new reekoh.plugins.Storage()
+const plugin = new reekoh.plugins.Storage()
 
 const async = require('async')
 const uuid = require('node-uuid')
@@ -29,7 +29,7 @@ let sendData = (data, callback) => {
           callback(err)
         }
       } else {
-        _plugin.log(JSON.stringify({
+        plugin.log(JSON.stringify({
           title: 'Record Successfully inserted to Couchbase.',
           data: data,
           key: id
@@ -44,7 +44,7 @@ let sendData = (data, callback) => {
         console.error('Error inserting record on Couchbase', err)
         callback(err)
       } else {
-        _plugin.log(JSON.stringify({
+        plugin.log(JSON.stringify({
           title: 'Record Successfully inserted to Couchbase.',
           data: data,
           key: id
@@ -56,26 +56,26 @@ let sendData = (data, callback) => {
   }
 }
 
-_plugin.on('data', (data) => {
+plugin.on('data', (data) => {
   if (isPlainObject(data)) {
     sendData(data, (error) => {
-      if (error) _plugin.logException(error)
-      process.send({ type: 'processed' })
+      if (error) plugin.logException(error)
+      plugin.emit('processed')
     })
   } else if (Array.isArray(data)) {
     async.each(data, (datum, done) => {
       sendData(datum, done)
     }, (error) => {
-      if (error) _plugin.logException(error)
-      process.send({ type: 'processed' })
+      if (error) plugin.logException(error)
+      plugin.emit('processed')
     })
   } else {
-    _plugin.logException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`))
+    plugin.logException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`))
   }
 })
 
-_plugin.once('ready', () => {
-  _opt = _plugin.config
+plugin.once('ready', () => {
+  _opt = plugin.config
 
   let url = `${_opt.host}`
   if (_opt.port) url = `${url}:${_opt.port}`
@@ -84,14 +84,14 @@ _plugin.once('ready', () => {
 
   _bucket = cluster.openBucket(_opt.bucket, _opt.bucketPassword || '', (error) => {
     if (error) {
-      _plugin.logException(error)
-
-      return setTimeout(() => {
-        process.exit(1)
-      }, 5000)
+      plugin.logException(error)
+      return console.error(error)
     }
 
-    _plugin.log('Couchbase Storage Plugin has been initialized.')
-    process.send({ type: 'ready' })
+    plugin.log('Couchbase Storage Plugin has been initialized.')
+    plugin.emit('init')
   })
 })
+
+module.exports = plugin
+
